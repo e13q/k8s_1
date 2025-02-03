@@ -1,10 +1,37 @@
+## Что потребуется
+
+Потребуется image Django. Репозиторий доступен по [ссылке](https://github.com/devmanorg/k8s-test-django).
+Можно собрать прямо в minikube, либо просто добавить image в кэш: 
+```
+minikube cache add django_app:latest
+```
+
+Для запуска minikube + virtualbox на Windows необходимо скачать 3 исполняемых файла и добавить папку в PATH:
+1. [Minikube](https://kubernetes.io/ru/docs/tasks/tools/install-minikube/);
+2. [kubectl](https://kubernetes.io/ru/docs/tasks/tools/install-kubectl/);
+3. [helm](https://github.com/helm/helm/releases/latest).
+
+Также, потребуется установить [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
+
+## Запуск Minikube
+
+Запускаем Minikube:
+```
+minikube start
+```
+
 ## Секреты
 Для создания секрета на кластере Minikube можно использовать .env файл с данными.
 Пример содержания .env:
 ```
 SECRET_KEY=DJANGO-SECRET-KEY
-DATABASE_URL=postgres://POSTGRES_USER:POSTGRES_PASSWORD_@192.168.1.1:5431/POSTGRES
+DATABASE_URL=postgres://POSTGRES_USER:POSTGRES_PASSWORD_@postgresql.default.svc.cluster.local:5432/POSTGRES
 ALLOWED_HOSTS=192.168.1.1,127.0.0.1,localhost
+```
+
+Адрес на бд в кластере (установка далее) будет:
+```
+postgresql.default.svc.cluster.local:5432
 ```
 
 Далее выполняем команду в директории с файлом:
@@ -13,7 +40,29 @@ kubectl create secret generic django-secrets --from-env-file=.env
 ```
 
 
-kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
+## Установка Postgresql
+Отредактируйте postgres-values.yaml, указав данные из секретов ранее по примеру.
+```
+helm install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql -f postgres-values.yaml
+```
+
+Если ошибка - команды для удаления:
+```
+helm uninstall postgresql
+kubectl delete pvc -l app.kubernetes.io/instance=postgresql
+```
+
+## Запуск
+
+Выполните команду:
+```
+kubectl apply -f deploy-ver1.yaml
+```
+
+Проверьте поды:
+```
+kubectl get pods
+```
 
 ## Добавление Ingress
 

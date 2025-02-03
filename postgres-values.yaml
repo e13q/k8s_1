@@ -1,0 +1,17 @@
+global:
+  postgresql:
+    auth:
+      username: postgres2 # имя пользователя
+      password: password # пароль
+      database: postgres # название бд
+
+primary:
+  persistence:
+    enabled: true
+  initdb:
+    scripts:
+      initdb.sql: | # Указать вместо 4ёх postgres2 - Ваше username
+        GRANT ALL PRIVILEGES ON DATABASE postgres TO postgres2; 
+        GRANT USAGE ON SCHEMA public TO postgres2;
+        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres2;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres2;
