@@ -58,9 +58,9 @@ metadata:
 spec:
   schedule: "0 0 1 * *"
   startingDeadlineSeconds: 300  # 5 минут
-  ttlSecondsAfterFinished: 86400  # 1 день
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 86400
       template:
         spec:
           containers:
@@ -87,3 +87,35 @@ spec:
                   name: django-secrets
                   key: DATABASE_URL
           restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+spec:
+  template:
+    spec:
+      containers:
+      - name: django
+        image: django_app
+        imagePullPolicy: IfNotPresent
+        command: ["python3", "manage.py", "migrate"]
+        env:
+        - name: DEBUG
+          value: "True"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: django-secrets
+              key: SECRET_KEY
+        - name: ALLOWED_HOSTS
+          valueFrom:
+            secretKeyRef:
+              name: django-secrets
+              key: ALLOWED_HOSTS
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: django-secrets
+              key: DATABASE_URL
+      restartPolicy: Never
