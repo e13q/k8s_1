@@ -50,3 +50,38 @@ spec:
     port: 80
     targetPort: 80
     nodePort: 30000
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: django-clearsessions
+spec:
+  schedule: "0 0 1 * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: django
+            image: django_app
+            imagePullPolicy: IfNotPresent
+            command: ["python3", "manage.py", "clearsessions"]
+            env:
+            - name: DEBUG
+              value: "True"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: SECRET_KEY
+            - name: ALLOWED_HOSTS
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: ALLOWED_HOSTS
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: DATABASE_URL
+          restartPolicy: Never
