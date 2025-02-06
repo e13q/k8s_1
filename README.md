@@ -17,7 +17,29 @@ minikube cache add django_app:latest
 
 Запускаем Minikube:
 ```
-minikube start
+minikube start --driver=virtualbox --no-vtx-check
+```
+
+## Локальный Image Docker
+
+Самое простое - загрузить в кэш:
+
+```
+minikube cache add django_app:latest
+```
+
+Но можно ещё собрать в кубе:
+
+```cmd
+minikube -p minikube docker-env --shell powershell | Invoke-Expression
+```
+
+```bash
+eval $(minikube docker-env)
+```
+
+```
+docker build -t django_app C:\Users\dvmn\k8s\backend_main_django
 ```
 
 ## Секреты
@@ -54,15 +76,26 @@ kubectl delete pvc -l app.kubernetes.io/instance=postgresql
 
 ## Запуск
 
-Выполните команду:
+Поднимаем Django:
 ```
-kubectl apply -f deploy-ver1.yaml
+kubectl apply -f deploy.yaml
 ```
 
-Проверьте поды:
+Проверить поды:
 ```
 kubectl get pods
 ```
+
+Поднимаем сервис:
+```
+kubectl apply -f service.yaml
+```
+
+Выполнить миграцию:
+```
+kubectl apply -f job-migrate.yaml
+```
+
 
 ## Добавление Ingress
 
@@ -74,7 +107,7 @@ kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
 
 Добавляем ingress
 ```
-kubectl apply -f ingress-ver1.yaml
+kubectl apply -f ingress.yaml
 ```
 
 Для теста внесены изменения в hosts для локального тестирования:
@@ -84,6 +117,11 @@ kubectl apply -f ingress-ver1.yaml
 
 ## Запуск удаления сессий Django
 В манифесте описано создание cronjob каждый 1ый день месяца.
+Добавление CronJob:
+```
+kubectl apply -f cronjob-clearsessions.yaml
+```
+
 Для запуска вне расписания используйте, например:
 ```
 kubectl create job --from=cronjob/django-clearsessions django-clearsessions-manual
@@ -101,4 +139,82 @@ django-clearsessions-manual-mmlwh   0/1     ErrImagePull   0          42s
 Смотрим так:
 ```
 kubectl logs django-clearsessions-manual-mmlwh
+```
+
+Шпаргалка на все используемые в проекте для запуска и удаления команды:
+Старт.
+
+Миникуб
+```
+minikube start --driver=virtualbox --no-vtx-check
+```
+Кидаем образ из докера
+```
+minikube cache add django_app:latest
+```
+Секреты
+```
+kubectl create secret generic django-secrets --from-env-file=.env
+```
+Postgresql
+```
+helm install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql -f postgres-values.yaml
+```
+Django
+```
+kubectl apply -f deploy.yaml
+```
+Django - миграция
+```
+kubectl apply -f job-migrate.yaml
+```
+Сервис
+```
+kubectl apply -f service.yaml
+```
+CronJob на чистку сессий 
+```
+kubectl apply -f cronjob-clearsessions.yaml
+```
+Ingress
+```
+kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
+```
+Пример локального теста Ingress
+```
+kubectl apply -f ingress.yaml
+```
+```
+minikube ip
+```
+Открываем hosts и вписываем:
+(ip из команды выше) star-burger.test
+
+Очистка (немного хаотично):
+```
+kubectl delete -f deploy.yaml
+```
+```
+kubectl delete -f  job-migrate.yaml
+```
+```
+kubectl delete -f service.yaml
+```
+```
+kubectl delete -f cronjob-clearsessions.yaml
+```
+```
+kubectl delete -f ingress.yaml
+```
+```
+helm uninstall postgresql
+```
+```
+kubectl delete pvc -l app.kubernetes.io/instance=postgresql
+```
+```
+kubectl delete secrets django-secrets
+```
+```
+minikube delete
 ```
